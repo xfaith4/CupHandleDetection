@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-04-02T09:05:26.327Z",
+  "runId": "ui-export-2026-04-02T09-05-26-229Z-d821e8",
+  "stackId": "node-next-app-npm",
+  "featureFlags": {
+    "HARDENING_PIPELINE": "false",
+    "PARALLEL_TEAMS": "false",
+    "REQUIREMENT_WIZARD": "false"
+  }
+}

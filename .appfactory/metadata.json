@@ -1,0 +1,43 @@
+{
+  "schema_version": "1.0",
+  "factory": {
+    "name": "AppFactory",
+    "version": "unknown"
+  },
+  "created_at": "2026-04-02T09:05:26.321Z",
+  "created_by": "xfaith",
+  "run_id": "ui-export-2026-04-02T09-05-26-229Z-d821e8",
+  "repo": {
+    "full_name": "local/node-next-app-npm",
+    "default_branch": "main"
+  },
+  "classification": {
+    "topic_tag": "appfactory-topic-node-next-app-npm",
+    "job_type": "build_app",
+    "contract_universe": "build_app",
+    "contract_version": "build_app_contract.v1",
+    "pipeline_id": "pipeline_build_app.v1",
+    "topics": [
+      "appfactory",
+      "appfactory-managed",
+      "appfactory-topic-node-next-app-npm",
+      "appfactory-contract-universe-build_app",
+      "appfactory-contract-build_app_contract.v1",
+      "appfactory-pipeline-pipeline_build_app.v1"
+    ]
+  },
+  "contracts": {
+    "common": "contracts/common_run_contract.v1.json",
+    "job": "contracts/build_app_contract.v1.json",
+    "pipeline": "pipelines/pipeline_build_app.v1.json"
+  },
+  "artifact_policy_id": "build_new_app.standard",
+  "events": [
+    {
+      "type": "repo_created",
+      "timestamp": "2026-04-02T09:05:26.321Z",
+      "actor": "xfaith",
+      "note": "App Factory scaffolded this repository."
+    }
+  ]
+}

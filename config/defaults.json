@@ -1,0 +1,560 @@
+{
+  "$meta": {
+    "file": "config/defaults.json",
+    "version": "1.0.0",
+    "generated": "2026-04-02",
+    "notes": [
+      "Defaults target daily OHLCV input; durations are expressed in bars via bars_per_week.",
+      "Cross-field validations are defined in validation.rules for simple PowerShell enforcement."
+    ]
+  },
+  "defaults": {
+    "app": {
+      "timezone": "UTC",
+      "log_level": "INFO"
+    },
+    "data": {
+      "symbol": null,
+      "bars_per_week": 5,
+      "timeframe": {
+        "mode": "daily",
+        "resample": {
+          "enabled": false,
+          "target_minutes": 1440,
+          "session": "US",
+          "allow_gaps": true,
+          "max_gap_bars": 3
+        }
+      },
+      "requirements": {
+        "min_bars_total": 260,
+        "min_bars_for_indicators": 60,
+        "drop_last_incomplete_bar": true
+      },
+      "nan_policy": {
+        "on_invalid_ohlcv_row": "drop",
+        "on_indicator_nan": "skip_bar"
+      }
+    },
+    "indicators": {
+      "volume": {
+        "lookback": 50,
+        "zscore": {
+          "enabled": true,
+          "clip": 6.0,
+          "epsilon_std": 1e-9
+        },
+        "percentile": {
+          "enabled": true,
+          "lookback": 50,
+          "method": "rank",
+          "min_unique": 10
+        },
+        "surge_ratio": {
+          "enabled": true,
+          "median_lookback": 20,
+          "epsilon_median": 1e-9
+        },
+        "dryup": {
+          "enabled": true,
+          "handle_contraction_min_pct": 0.15,
+          "lookback_short": 5,
+          "lookback_long": 20
+        }
+      },
+      "atr": {
+        "enabled": true,
+        "lookback": 14,
+        "method": "wilder",
+        "epsilon": 1e-9
+      },
+      "regime": {
+        "enabled": true,
+        "atr_percentile_lookback": 100,
+        "percentile_method": "rank",
+        "clip_0_1": true,
+        "scaling_alpha": 0.4,
+        "high_vol_confidence_penalty": 0.15
+      },
+      "sideways": {
+        "enabled": true,
+        "width_window_bars": 20,
+        "width_threshold": 0.12,
+        "width_stat": "median",
+        "min_consecutive_weeks": 4,
+        "max_consecutive_weeks": 65
+      }
+    },
+    "detection": {
+      "scan": {
+        "max_candidates": 3,
+        "cooldown_bars_after_failure": 10,
+        "require_full_history_for_signal": false
+      },
+      "durations": {
+        "base": {
+          "min_weeks": 4,
+          "max_weeks": 65
+        },
+        "cup": {
+          "min_weeks": 7,
+          "max_weeks": 65,
+          "min_right_recovery_fraction": 0.5,
+          "symmetry_tolerance": 0.3
+        },
+        "handle": {
+          "min_weeks": 1,
+          "max_weeks": 3
+        }
+      },
+      "geometry": {
+        "cup_depth": {
+          "min_pct": 0.10,
+          "max_pct": 0.50,
+          "ideal_min_pct": 0.15,
+          "ideal_max_pct": 0.35
+        },
+        "arc_quality": {
+          "enabled": true,
+          "left_monotone_max_up_bars_frac": 0.25,
+          "right_monotone_max_down_bars_frac": 0.25,
+          "max_single_bar_reversal_atr": 1.5
+        },
+        "rim": {
+          "max_rim_diff_pct": 0.08,
+          "right_rim_min_reclaim_pct": 0.90
+        }
+      },
+      "handle": {
+        "enabled": true,
+        "depth_max_pct_below_right_rim": 0.12,
+        "must_not_undercut_midpoint": true,
+        "midpoint_undercut_tolerance_pct": 0.00,
+        "volume_contraction_required": true,
+        "volume_contraction_metric": "surge_ratio_slope",
+        "min_contraction_score": 0.5
+      },
+      "breakout": {
+        "enabled": true,
+        "reference_level": "handle_high_or_rim",
+        "price": {
+          "atr_buffer_k": 0.25,
+          "min_close_above_ref_pct": 0.0,
+          "allow_intraday_high_trigger": false
+        },
+        "volume": {
+          "require_confirmation": true,
+          "logic": "or",
+          "z_threshold": 1.5,
+          "pctl_threshold": 0.85,
+          "surge_ratio_threshold": 1.25,
+          "use_zscore": true,
+          "use_percentile": true,
+          "use_surge_ratio": false
+        },
+        "regime_scaling": {
+          "enabled": true,
+          "scale_price_thresholds": true,
+          "scale_volume_thresholds": true,
+          "alpha": 0.4,
+          "min_scale": 0.8,
+          "max_scale": 1.2
+        },
+        "tentative": {
+          "enabled": true,
+          "max_bars_pending": 3,
+          "require_followthrough_close": true
+        }
+      },
+      "failure": {
+        "enabled": true,
+        "invalidate_on_handle_undercut": true,
+        "invalidate_on_breakout_fail_bars": 5,
+        "invalidate_on_cup_too_old_weeks": 65
+      }
+    },
+    "scoring": {
+      "enabled": true,
+      "components": {
+        "price": {
+          "weight": 0.35
+        },
+        "volume": {
+          "weight": 0.25
+        },
+        "duration": {
+          "weight": 0.25
+        },
+        "geometry": {
+          "weight": 0.15
+        }
+      },
+      "confidence": {
+        "clip_0_1": true,
+        "min_bars_since_start": 60,
+        "penalty_high_vol_regime": true
+      },
+      "timing": {
+        "enabled": true,
+        "distance_to_pivot_atr_softmax_k": 1.0,
+        "urgency_thresholds": {
+          "WATCH": 0.35,
+          "ALERT": 0.55,
+          "SIGNAL": 0.70,
+          "BUY": 0.85
+        }
+      }
+    },
+    "entry_zones": {
+      "enabled": true,
+      "pivot": {
+        "type": "handle_high",
+        "fallback": "right_rim"
+      },
+      "entry": {
+        "atr_add_k": 0.10,
+        "max_chase_atr": 0.75,
+        "min_volume_confirm_for_entry": true
+      },
+      "stop": {
+        "type": "handle_low",
+        "atr_buffer_k": 0.10,
+        "max_stop_pct": 0.12
+      },
+      "risk": {
+        "min_rr": 2.0,
+        "position_sizing_enabled": false,
+        "account_risk_pct": 0.005
+      }
+    },
+    "persistence": {
+      "enabled": true,
+      "output_dir": "out",
+      "stage_history": {
+        "enabled": true,
+        "format": "csv",
+        "append_only": true,
+        "file_name": "stage_history.csv"
+      },
+      "events": {
+        "enabled": true,
+        "format": "jsonl",
+        "append_only": true,
+        "file_name": "events.jsonl"
+      },
+      "telemetry": {
+        "enabled": false,
+        "file_name": "telemetry.jsonl"
+      }
+    },
+    "alerts": {
+      "enabled": true,
+      "console": {
+        "enabled": true,
+        "include_evidence": true
+      },
+      "rate_limit": {
+        "enabled": true,
+        "min_minutes_between_same_event": 60
+      },
+      "event_types": {
+        "stage_change": true,
+        "tentative_breakout": true,
+        "breakout_confirmed": true,
+        "pattern_failed": true
+      },
+      "min_confidence": {
+        "stage_change": 0.40,
+        "tentative_breakout": 0.55,
+        "breakout_confirmed": 0.70
+      }
+    }
+  },
+  "validation": {
+    "schema": {
+      "type": "object",
+      "required": ["defaults", "validation"],
+      "properties": {
+        "defaults": {
+          "type": "object",
+          "required": ["data", "indicators", "detection", "scoring", "persistence", "alerts"],
+          "properties": {
+            "app": {
+              "type": "object",
+              "properties": {
+                "timezone": { "type": "string", "minLength": 1 },
+                "log_level": { "type": "string", "enum": ["TRACE", "DEBUG", "INFO", "WARN", "ERROR"] }
+              },
+              "additionalProperties": true
+            },
+            "data": {
+              "type": "object",
+              "required": ["bars_per_week", "timeframe", "requirements", "nan_policy"],
+              "properties": {
+                "symbol": { "type": ["string", "null"], "minLength": 1 },
+                "bars_per_week": { "type": "integer", "minimum": 1, "maximum": 7 },
+                "timeframe": {
+                  "type": "object",
+                  "required": ["mode", "resample"],
+                  "properties": {
+                    "mode": { "type": "string", "enum": ["daily", "weekly", "intraday"] },
+                    "resample": {
+                      "type": "object",
+                      "required": ["enabled", "target_minutes", "session", "allow_gaps", "max_gap_bars"],
+                      "properties": {
+                        "enabled": { "type": "boolean" },
+                        "target_minutes": { "type": "integer", "minimum": 1, "maximum": 10080 },
+                        "session": { "type": "string", "enum": ["US", "24x7", "EU", "CUSTOM"] },
+                        "allow_gaps": { "type": "boolean" },
+                        "max_gap_bars": { "type": "integer", "minimum": 0, "maximum": 1000 }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                "requirements": {
+                  "type": "object",
+                  "required": ["min_bars_total", "min_bars_for_indicators", "drop_last_incomplete_bar"],
+                  "properties": {
+                    "min_bars_total": { "type": "integer", "minimum": 50, "maximum": 20000 },
+                    "min_bars_for_indicators": { "type": "integer", "minimum": 20, "maximum": 5000 },
+                    "drop_last_incomplete_bar": { "type": "boolean" }
+                  },
+                  "additionalProperties": false
+                },
+                "nan_policy": {
+                  "type": "object",
+                  "required": ["on_invalid_ohlcv_row", "on_indicator_nan"],
+                  "properties": {
+                    "on_invalid_ohlcv_row": { "type": "string", "enum": ["drop", "error"] },
+                    "on_indicator_nan": { "type": "string", "enum": ["skip_bar", "error"] }
+                  },
+                  "additionalProperties": false
+                }
+              },
+              "additionalProperties": false
+            },
+            "indicators": {
+              "type": "object",
+              "required": ["volume", "atr", "regime", "sideways"],
+              "properties": {
+                "volume": {
+                  "type": "object",
+                  "required": ["lookback", "zscore", "percentile", "surge_ratio", "dryup"],
+                  "properties": {
+                    "lookback": { "type": "integer", "minimum": 5, "maximum": 500 },
+                    "zscore": {
+                      "type": "object",
+                      "required": ["enabled", "clip", "epsilon_std"],
+                      "properties": {
+                        "enabled": { "type": "boolean" },
+                        "clip": { "type": "number", "minimum": 0.0, "maximum": 50.0 },
+                        "epsilon_std": { "type": "number", "exclusiveMinimum": 0.0, "maximum": 0.01 }
+                      },
+                      "additionalProperties": false
+                    },
+                    "percentile": {
+                      "type": "object",
+                      "required": ["enabled", "lookback", "method", "min_unique"],
+                      "properties": {
+                        "enabled": { "type": "boolean" },
+                        "lookback": { "type": "integer", "minimum": 10, "maximum": 500 },
+                        "method": { "type": "string", "enum": ["rank", "linear"] },
+                        "min_unique": { "type": "integer", "minimum": 3, "maximum": 200 }
+                      },
+                      "additionalProperties": false
+                    },
+                    "surge_ratio": {
+                      "type": "object",
+                      "required": ["enabled", "median_lookback", "epsilon_median"],
+                      "properties": {
+                        "enabled": { "type": "boolean" },
+                        "median_lookback": { "type": "integer", "minimum": 5, "maximum": 250 },
+                        "epsilon_median": { "type": "number", "exclusiveMinimum": 0.0, "maximum": 0.01 }
+                      },
+                      "additionalProperties": false
+                    },
+                    "dryup": {
+                      "type": "object",
+                      "required": ["enabled", "handle_contraction_min_pct", "lookback_short", "lookback_long"],
+                      "properties": {
+                        "enabled": { "type": "boolean" },
+                        "handle_contraction_min_pct": { "type": "number", "minimum": 0.0, "maximum": 0.9 },
+                        "lookback_short": { "type": "integer", "minimum": 2, "maximum": 50 },
+                        "lookback_long": { "type": "integer", "minimum": 5, "maximum": 250 }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                "atr": {
+                  "type": "object",
+                  "required": ["enabled", "lookback", "method", "epsilon"],
+                  "properties": {
+                    "enabled": { "type": "boolean" },
+                    "lookback": { "type": "integer", "minimum": 2, "maximum": 200 },
+                    "method": { "type": "string", "enum": ["wilder", "sma"] },
+                    "epsilon": { "type": "number", "exclusiveMinimum": 0.0, "maximum": 0.01 }
+                  },
+                  "additionalProperties": false
+                },
+                "regime": {
+                  "type": "object",
+                  "required": ["enabled", "atr_percentile_lookback", "percentile_method", "clip_0_1", "scaling_alpha", "high_vol_confidence_penalty"],
+                  "properties": {
+                    "enabled": { "type": "boolean" },
+                    "atr_percentile_lookback": { "type": "integer", "minimum": 20, "maximum": 1000 },
+                    "percentile_method": { "type": "string", "enum": ["rank", "linear"] },
+                    "clip_0_1": { "type": "boolean" },
+                    "scaling_alpha": { "type": "number", "minimum": 0.0, "maximum": 2.0 },
+                    "high_vol_confidence_penalty": { "type": "number", "minimum": 0.0, "maximum": 0.9 }
+                  },
+                  "additionalProperties": false
+                },
+                "sideways": {
+                  "type": "object",
+                  "required": ["enabled", "width_window_bars", "width_threshold", "width_stat", "min_consecutive_weeks", "max_consecutive_weeks"],
+                  "properties": {
+                    "enabled": { "type": "boolean" },
+                    "width_window_bars": { "type": "integer", "minimum": 5, "maximum": 260 },
+                    "width_threshold": { "type": "number", "minimum": 0.01, "maximum": 1.0 },
+                    "width_stat": { "type": "string", "enum": ["median", "mean"] },
+                    "min_consecutive_weeks": { "type": "integer", "minimum": 1, "maximum": 200 },
+                    "max_consecutive_weeks": { "type": "integer", "minimum": 1, "maximum": 260 }
+                  },
+                  "additionalProperties": false
+                }
+              },
+              "additionalProperties": false
+            },
+            "detection": {
+              "type": "object",
+              "required": ["scan", "durations", "geometry", "handle", "breakout", "failure"],
+              "properties": {
+                "scan": {
+                  "type": "object",
+                  "required": ["max_candidates", "cooldown_bars_after_failure", "require_full_history_for_signal"],
+                  "properties": {
+                    "max_candidates": { "type": "integer", "minimum": 1, "maximum": 50 },
+                    "cooldown_bars_after_failure": { "type": "integer", "minimum": 0, "maximum": 500 },
+                    "require_full_history_for_signal": { "type": "boolean" }
+                  },
+                  "additionalProperties": false
+                }
+              },
+              "additionalProperties": true
+            },
+            "scoring": { "type": "object" },
+            "entry_zones": { "type": "object" },
+            "persistence": { "type": "object" },
+            "alerts": { "type": "object" }
+          },
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": true
+    },
+    "rules": [
+      {
+        "id": "R001",
+        "description": "min_bars_for_indicators must be <= min_bars_total",
+        "pathA": "defaults.data.requirements.min_bars_for_indicators",
+        "op": "<=",
+        "pathB": "defaults.data.requirements.min_bars_total",
+        "severity": "error"
+      },
+      {
+        "id": "R002",
+        "description": "Volume percentile lookback should match or exceed volume lookback",
+        "pathA": "defaults.indicators.volume.percentile.lookback",
+        "op": ">=",
+        "pathB": "defaults.indicators.volume.lookback",
+        "severity": "warn"
+      },
+      {
+        "id": "R003",
+        "description": "Handle min_weeks must be <= max_weeks",
+        "pathA": "defaults.detection.durations.handle.min_weeks",
+        "op": "<=",
+        "pathB": "defaults.detection.durations.handle.max_weeks",
+        "severity": "error"
+      },
+      {
+        "id": "R004",
+        "description": "Cup min_weeks must be <= max_weeks",
+        "pathA": "defaults.detection.durations.cup.min_weeks",
+        "op": "<=",
+        "pathB": "defaults.detection.durations.cup.max_weeks",
+        "severity": "error"
+      },
+      {
+        "id": "R005",
+        "description": "Base min_weeks must be <= max_weeks",
+        "pathA": "defaults.detection.durations.base.min_weeks",
+        "op": "<=",
+        "pathB": "defaults.detection.durations.base.max_weeks",
+        "severity": "error"
+      },
+      {
+        "id": "R006",
+        "description": "Cup depth min_pct <= ideal_min_pct <= ideal_max_pct <= max_pct",
+        "severity": "error",
+        "assert": "cup_depth.min_pct <= cup_depth.ideal_min_pct && cup_depth.ideal_min_pct <= cup_depth.ideal_max_pct && cup_depth.ideal_max_pct <= cup_depth.max_pct",
+        "paths": [
+          "defaults.detection.geometry.cup_depth.min_pct",
+          "defaults.detection.geometry.cup_depth.ideal_min_pct",
+          "defaults.detection.geometry.cup_depth.ideal_max_pct",
+          "defaults.detection.geometry.cup_depth.max_pct"
+        ]
+      },
+      {
+        "id": "R007",
+        "description": "Regime scaling alpha must match both indicators.regime.scaling_alpha and detection.breakout.regime_scaling.alpha if both present",
+        "severity": "warn",
+        "assert": "abs(ind_alpha - brk_alpha) <= 1e-9",
+        "paths": [
+          "defaults.indicators.regime.scaling_alpha",
+          "defaults.detection.breakout.regime_scaling.alpha"
+        ]
+      },
+      {
+        "id": "R008",
+        "description": "Scoring weights must sum to 1.0 ± 1e-6",
+        "severity": "error",
+        "assert": "abs((w_price+w_volume+w_duration+w_geometry)-1.0) <= 1e-6",
+        "paths": [
+          "defaults.scoring.components.price.weight",
+          "defaults.scoring.components.volume.weight",
+          "defaults.scoring.components.duration.weight",
+          "defaults.scoring.components.geometry.weight"
+        ]
+      },
+      {
+        "id": "R009",
+        "description": "Urgency thresholds must be increasing WATCH < ALERT < SIGNAL < BUY and within [0,1]",
+        "severity": "error",
+        "assert": "0<=WATCH && WATCH<ALERT && ALERT<SIGNAL && SIGNAL<BUY && BUY<=1",
+        "paths": [
+          "defaults.scoring.timing.urgency_thresholds.WATCH",
+          "defaults.scoring.timing.urgency_thresholds.ALERT",
+          "defaults.scoring.timing.urgency_thresholds.SIGNAL",
+          "defaults.scoring.timing.urgency_thresholds.BUY"
+        ]
+      },
+      {
+        "id": "R010",
+        "description": "If breakout.volume.logic == 'or', at least one of use_zscore/use_percentile/use_surge_ratio must be true",
+        "severity": "error",
+        "assert": "(logic!='or') || (use_zscore || use_percentile || use_surge_ratio)",
+        "paths": [
+          "defaults.detection.breakout.volume.logic",
+          "defaults.detection.breakout.volume.use_zscore",
+          "defaults.detection.breakout.volume.use_percentile",
+          "defaults.detection.breakout.volume.use_surge_ratio"
+        ]
+      }
+    ]
+  }
+}

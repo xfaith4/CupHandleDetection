@@ -1,0 +1,8 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-04-02T09:05:26.327Z",
+  "runId": "ui-export-2026-04-02T09-05-26-229Z-d821e8",
+  "stackId": "node-next-app-npm",
+  "hardeningEnabled": false,
+  "note": "HARDENING_PIPELINE=false (legacy export path; normalization/contract/gates/repair are skipped)."
+}
