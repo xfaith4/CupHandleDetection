@@ -4,9 +4,9 @@
   "version": "0.1.0",
   "description": "Cup-with-handle detection pipeline and workbench UI.",
   "scripts": {
-    "ui": "npm --prefix ui/workbench run dev",
+    "ui": "pwsh -NoProfile -File ./scripts/Start-CupHandleWorkbench.ps1",
     "ui:install": "npm --prefix ui/workbench install",
-    "ui:build": "npm --prefix ui/workbench run build",
+    "ui:build": "pwsh -NoProfile -File ./scripts/Start-CupHandleWorkbench.ps1 -Build",
     "ui:preview": "npm --prefix ui/workbench run preview",
     "detect": "pwsh -NoProfile -File ./scripts/Invoke-CupHandleDetection.ps1",
     "test:pester": "pwsh -NoProfile -Command \"Invoke-Pester -Path ./tests -Output Detailed\"",

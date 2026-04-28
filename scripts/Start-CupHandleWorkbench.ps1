@@ -1,13 +1,13 @@
 # Launches the Cup & Handle workbench UI from the repository root.
 
-Set-StrictMode -Version Latest
-$ErrorActionPreference = 'Stop'
-
 [CmdletBinding()]
 param(
     [switch] $Install,
     [switch] $Build
 )
+
+Set-StrictMode -Version Latest
+$ErrorActionPreference = 'Stop'
 
 $RepoRoot = Split-Path -Parent $PSScriptRoot
 $UiRoot = Join-Path $RepoRoot 'ui/workbench'
