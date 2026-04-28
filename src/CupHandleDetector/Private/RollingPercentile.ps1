@@ -28,7 +28,6 @@ function _IsValidNumber {
 
 function _BinarySearchLeft {
     param(
-        [Parameter(Mandatory)]
         [System.Collections.Generic.List[double]]$List,
         [Parameter(Mandatory)]
         [double]$Value
@@ -45,7 +44,6 @@ function _BinarySearchLeft {
 
 function _BinarySearchRight {
     param(
-        [Parameter(Mandatory)]
         [System.Collections.Generic.List[double]]$List,
         [Parameter(Mandatory)]
         [double]$Value
@@ -62,7 +60,6 @@ function _BinarySearchRight {
 
 function _SortedInsert {
     param(
-        [Parameter(Mandatory)]
         [System.Collections.Generic.List[double]]$List,
         [Parameter(Mandatory)]
         [double]$Value
@@ -73,7 +70,6 @@ function _SortedInsert {
 
 function _SortedRemoveOne {
     param(
-        [Parameter(Mandatory)]
         [System.Collections.Generic.List[double]]$List,
         [Parameter(Mandatory)]
         [double]$Value
@@ -105,7 +101,6 @@ function _SortedRemoveOne {
 
 function _GetPercentileFromSorted {
     param(
-        [Parameter(Mandatory)]
         [System.Collections.Generic.List[double]]$Sorted,
         [Parameter(Mandatory)]
         [ValidateRange(0.0, 100.0)]

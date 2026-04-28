@@ -108,6 +108,7 @@ function Get-VolumeZScoreClipped {
 
     [pscustomobject]@{
         Z        = $z
+        ZClipped = $z
         Mean     = $mean
         Std      = $std
         Degraded = $degraded
@@ -213,6 +214,74 @@ function Get-VolumePercentileFeatures {
         AboveP      = $above
         Rank01Proxy = $rank
         Degraded    = $degraded
+    }
+}
+
+function Get-VolumeZScore {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][object[]] $Volume,
+        [Parameter(Mandatory)][Alias('Lookback')][ValidateRange(1, [int]::MaxValue)][int] $Window,
+        [ValidateRange(0.0, [double]::MaxValue)][double] $Clip = 3.0
+    )
+
+    return (Get-VolumeZScoreClipped -Volume $Volume -Window $Window -Clip $Clip).Z
+}
+
+function Get-VolumePercentile {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][object[]] $Volume,
+        [Parameter(Mandatory)][Alias('Lookback')][ValidateRange(1, [int]::MaxValue)][int] $Window
+    )
+
+    $result = Get-VolumePercentileRank -Volume $Volume -Window $Window -LowPercentile 0.0 -HighPercentile 100.0 -MinPeriods $Window
+    return $result.Rank01
+}
+
+function Get-VolumePercentileRank {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][object[]] $Volume,
+        [Parameter(Mandatory)][ValidateRange(1, [int]::MaxValue)][int] $Window,
+        [ValidateRange(0.0, 100.0)][double] $LowPercentile = 5.0,
+        [ValidateRange(0.0, 100.0)][double] $HighPercentile = 95.0,
+        [ValidateRange(1, [int]::MaxValue)][int] $MinPeriods = $Window,
+        [ValidateSet('Linear','Lower','Higher','Nearest')][string] $Interpolation = 'Linear'
+    )
+
+    $n = $Volume.Count
+    $low = Get-RollingPercentile -Values $Volume -Window $Window -Percentile $LowPercentile -MinPeriods $MinPeriods -Interpolation $Interpolation
+    $high = Get-RollingPercentile -Values $Volume -Window $Window -Percentile $HighPercentile -MinPeriods $MinPeriods -Interpolation $Interpolation
+    $rank = New-Object object[] $n
+    $degraded = New-Object bool[] $n
+
+    for ($i = 0; $i -lt $n; $i++) {
+        if (-not (_IsFinite $Volume[$i]) -or $null -eq $low[$i] -or $null -eq $high[$i]) {
+            $rank[$i] = $null
+            $degraded[$i] = $true
+            continue
+        }
+
+        $range = [double]$high[$i] - [double]$low[$i]
+        if ([Math]::Abs($range) -lt 1e-12) {
+            $rank[$i] = 0.5
+            $degraded[$i] = $false
+            continue
+        }
+
+        $value = ([double]$Volume[$i] - [double]$low[$i]) / $range
+        if ($value -lt 0) { $value = 0.0 }
+        if ($value -gt 1) { $value = 1.0 }
+        $rank[$i] = $value
+        $degraded[$i] = $false
+    }
+
+    return [pscustomobject]@{
+        Rank01   = $rank
+        PLow     = $low
+        PHigh    = $high
+        Degraded = $degraded
     }
 }
 

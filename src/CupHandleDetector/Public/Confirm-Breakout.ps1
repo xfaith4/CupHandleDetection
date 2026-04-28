@@ -43,6 +43,10 @@ function _IsFiniteNumberBO {
 
 function _ToDoubleOrNaNBO {
     param([object]$x)
+    while ($x -is [System.Array]) {
+        if ($x.Count -eq 0) { return [double]::NaN }
+        $x = $x[$x.Count - 1]
+    }
     if (-not (_IsFiniteNumberBO $x)) { return [double]::NaN }
     return [double]$x
 }
@@ -210,6 +214,8 @@ function _EvalVolumeConfirmBO {
         $p = [double]::NaN
         if ($null -ne $SeriesItem -and ($SeriesItem.PSObject.Properties.Name -contains 'VolumePercentile')) {
             $p = _ToDoubleOrNaNBO $SeriesItem.VolumePercentile
+        } elseif ($null -ne $SeriesItem -and ($SeriesItem.PSObject.Properties.Name -contains 'VolumePctl')) {
+            $p = _ToDoubleOrNaNBO $SeriesItem.VolumePctl
         } elseif ($null -ne $SeriesItem -and ($SeriesItem.PSObject.Properties.Name -contains 'VolPctl')) {
             $p = _ToDoubleOrNaNBO $SeriesItem.VolPctl
         }
@@ -259,11 +265,18 @@ function Confirm-Breakout {
     [CmdletBinding()]
     param(
         # Indicators composition output (Compute-Indicators)
-        [Parameter(Mandatory)] [pscustomobject]$Indicators,
+        [pscustomobject]$Indicators,
 
         # Pattern object (a single handle candidate) to confirm breakout against
         # Should contain indices/prices for handle and cup; at minimum HandleEndIndex + HandleHigh/RightPeak.
-        [Parameter(Mandatory)] [pscustomobject]$Pattern,
+        [pscustomobject]$Pattern,
+
+        # Legacy/test harness shape: snapshots plus one or more handle candidates.
+        [object[]]$Series,
+        [object[]]$Close,
+        [object[]]$High,
+        [object[]]$Volume,
+        [object[]]$HandleCandidates,
 
         # Evaluate at a specific bar index (default: last bar)
         [int]$BarIndex = -1,
@@ -271,6 +284,38 @@ function Confirm-Breakout {
         # Config (merged defaults + overrides)
         [hashtable]$Config = @{}
     )
+
+    if ($PSBoundParameters.ContainsKey('Series')) {
+        $signals = [System.Collections.Generic.List[object]]::new()
+        $seriesItems = @(
+            foreach ($entry in @($Series)) {
+                if ($entry -is [System.Array]) {
+                    foreach ($nested in $entry) { $nested }
+                } else {
+                    $entry
+                }
+            }
+        )
+        $patterns = @($HandleCandidates)
+        if ($patterns.Count -eq 0) {
+            return [pscustomobject]@{
+                Meta = @{ Status='EMPTY'; Bars=$seriesItems.Count; Issues=@('HandleCandidates is empty.') }
+                Signals = @()
+                Diagnostics = @{ Issues=@('HandleCandidates is empty.') }
+            }
+        }
+
+        foreach ($candidate in $patterns) {
+            $result = Confirm-Breakout -Indicators ([pscustomobject]@{ Series = ,$seriesItems }) -Pattern $candidate -Config $Config
+            foreach ($signal in @($result.Signals)) { $signals.Add($signal) }
+        }
+
+        return [pscustomobject]@{
+            Meta = @{ Status='OK'; Bars=$seriesItems.Count; Issues=@() }
+            Signals = $signals.ToArray()
+            Diagnostics = @{ Issues=@() }
+        }
+    }
 
     $issues = New-Object System.Collections.Generic.List[string]
 
@@ -282,7 +327,15 @@ function Confirm-Breakout {
         }
     }
 
-    $series = $Indicators.Series
+    $series = @(
+        foreach ($entry in @($Indicators.Series)) {
+            if ($entry -is [System.Array]) {
+                foreach ($nested in $entry) { $nested }
+            } else {
+                $entry
+            }
+        }
+    )
     $n = $series.Count
     if ($n -le 0) {
         return [pscustomobject]@{
@@ -329,17 +382,17 @@ function Confirm-Breakout {
     # ---- Resolve OHLCV at bar ----
     $item = $series[$evalI]
 
-    $close = _ToDoubleOrNaNBO $item.Close
-    $high  = if ($item.PSObject.Properties.Name -contains 'High') { _ToDoubleOrNaNBO $item.High } else { [double]::NaN }
-    $atr   = if ($item.PSObject.Properties.Name -contains 'ATR') { _ToDoubleOrNaNBO $item.ATR } elseif ($item.PSObject.Properties.Name -contains 'Atr') { _ToDoubleOrNaNBO $item.Atr } else { [double]::NaN }
+    $closeValue = [double](@(_ToDoubleOrNaNBO $item.Close)[-1])
+    $highValue  = if ($item.PSObject.Properties.Name -contains 'High') { [double](@(_ToDoubleOrNaNBO $item.High)[-1]) } else { [double]::NaN }
+    $atrValue   = if ($item.PSObject.Properties.Name -contains 'ATR') { [double](@(_ToDoubleOrNaNBO $item.ATR)[-1]) } elseif ($item.PSObject.Properties.Name -contains 'Atr') { [double](@(_ToDoubleOrNaNBO $item.Atr)[-1]) } else { [double]::NaN }
 
-    if ([double]::IsNaN($close) -or $close -le 0) {
+    if ([double]::IsNaN($closeValue) -or $closeValue -le 0) {
         return [pscustomobject]@{
             Meta = @{ Status='OK'; Bars=$n; Issues=$issues.ToArray() }
             Signals = @([pscustomobject]@{
                 BarIndex=$evalI
                 Status='NO_SIGNAL'
-                Evidence=[pscustomobject]@{ Reason='Invalid close'; Close=$close }
+                Evidence=[pscustomobject]@{ Reason='Invalid close'; Close=$closeValue }
             })
             Diagnostics = @{ Issues=$issues.ToArray() }
         }
@@ -364,8 +417,8 @@ function Confirm-Breakout {
     }
 
     # ---- Price thresholds (regime-scaled) ----
-    $atrKBase    = [double](_TryGetBO $Config 'detection.breakout.price.atr_buffer_k' 0.25)
-    $minClosePct = [double](_TryGetBO $Config 'detection.breakout.price.min_close_above_ref_pct' 0.0)
+    $atrKBase    = [double](_TryGetBO $Config 'detection.breakout.price.atr_buffer_k' (_TryGetBO $Config 'detection.breakout.price.atr_buffer_mult' 0.25))
+    $minClosePct = [double](_TryGetBO $Config 'detection.breakout.price.min_close_above_ref_pct' (_TryGetBO $Config 'detection.breakout.price.min_percent_above_pivot' 0.0))
     $allowHiTrig = [bool](_TryGetBO $Config 'detection.breakout.price.allow_intraday_high_trigger' $false)
 
     $scalePrice = [bool](_TryGetBO $Config 'detection.breakout.regime_scaling.scale_price_thresholds' $true)
@@ -375,8 +428,8 @@ function Confirm-Breakout {
     $minClosePctScaled = if ($scalePrice) { $minClosePct * $regimeScale } else { $minClosePct }
 
     $atrBuf = 0.0
-    if (-not [double]::IsNaN($atr) -and $atr -gt 0) {
-        $atrBuf = $atrK * $atr
+    if (-not [double]::IsNaN($atrValue) -and $atrValue -gt 0) {
+        $atrBuf = $atrK * $atrValue
     } else {
         if ($atrKBase -gt 0) { $issues.Add("ATR missing/invalid at bar $evalI; ATR buffer treated as 0.") }
         $atrBuf = 0.0
@@ -386,10 +439,10 @@ function Confirm-Breakout {
     $refPlus = $pivot + $atrBuf + $pctBuf
 
     # Price pass logic
-    $closePass = ($close -ge $refPlus)
+    $closePass = ($closeValue -ge $refPlus)
     $highPass  = $false
-    if ($allowHiTrig -and -not [double]::IsNaN($high) -and $high -gt 0) {
-        $highPass = ($high -ge $refPlus)
+    if ($allowHiTrig -and -not [double]::IsNaN($highValue) -and $highValue -gt 0) {
+        $highPass = ($highValue -ge $refPlus)
     }
 
     $pricePassed = $closePass -or $highPass
@@ -463,9 +516,9 @@ function Confirm-Breakout {
         RegimeScale = $regimeScale
 
         Price = [pscustomobject]@{
-            Close = $close
-            High = $high
-            ATR = $atr
+            Close = $closeValue
+            High = $highValue
+            ATR = $atrValue
             AllowIntradayHighTrigger = $allowHiTrig
             AtrBufferKBase = $atrKBase
             AtrBufferKScaled = $atrK

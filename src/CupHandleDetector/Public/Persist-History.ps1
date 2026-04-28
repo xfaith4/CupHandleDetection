@@ -311,5 +311,3 @@ function Persist-CHDHistory {
     }
   }
 }
-
-Export-ModuleMember -Function Persist-CHDHistory

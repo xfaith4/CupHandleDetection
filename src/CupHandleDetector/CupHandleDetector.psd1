@@ -63,12 +63,13 @@
 
     # Functions to export from this module
     FunctionsToExport = @(
-        # High-level pipeline (public API)
-        'Invoke-CHDScan',
-        'Invoke-CHDAnalyze',
-        'Invoke-CHDIndicators',
-        'Invoke-CHDBacktest',
-        'Invoke-CHDWatch'
+        'Compute-Indicators',
+        'Confirm-Breakout',
+        'ConvertTo-OhlcvSeries',
+        'Detect-Stages',
+        'Emit-CHDAlert',
+        'Persist-CHDHistory',
+        'Resample-Ohlcv'
     )
 
     # Cmdlets to export from this module

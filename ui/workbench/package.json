@@ -1,0 +1,26 @@
+{
+  "name": "cup-n-handle-workbench",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "concurrently -k \"npm:dev:server\" \"npm:dev:web\"",
+    "dev:web": "vite",
+    "dev:server": "node server.mjs",
+    "build": "vite build",
+    "preview": "vite preview --host",
+    "start": "node server.mjs",
+    "check": "npm run build"
+  },
+  "dependencies": {
+    "express": "^5.2.1",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4",
+    "recharts": "^3.8.1"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^6.0.1",
+    "concurrently": "^9.2.1",
+    "vite": "^8.0.3"
+  }
+}

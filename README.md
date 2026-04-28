@@ -3,7 +3,9 @@
 A PowerShell-based pipeline to ingest OHLCV bars from CSV, optionally resample them, compute indicator features, detect **Cup-with-Handle** patterns, emit alerts/events, and persist append-only logs and detection summaries.
 
 - Primary entrypoint: `scripts/Invoke-CupHandleDetection.ps1`
+- UI entrypoint: `npm run ui` or `scripts/Start-CupHandleWorkbench.ps1`
 - Default configuration: `config/defaults.json`
+- Architecture notes: **[`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)**
 - Full CLI & schema docs: **[`docs/USAGE.md`](docs/USAGE.md)**
 
 > Disclaimer: This is research tooling, not financial advice.
@@ -27,11 +29,29 @@ A PowerShell-based pipeline to ingest OHLCV bars from CSV, optionally resample t
 ## Requirements
 
 - PowerShell **7+** (`pwsh`)
+- Node.js **20+** and npm for the workbench UI
 - Your own OHLCV CSV file (no data provider built-in)
 
 ---
 
 ## Quickstart
+
+### Launch the workbench UI
+
+From the repository root:
+
+```bash
+npm run ui:install
+npm run ui
+```
+
+PowerShell users can use the wrapper script instead:
+
+```powershell
+pwsh ./scripts/Start-CupHandleWorkbench.ps1
+```
+
+The UI starts Vite plus its local API server. Set `ALPHA_VANTAGE_API_KEY` in `ui/workbench/.env` or your shell to enable live market sync.
 
 ### 1) Run detection on a daily-bar CSV
 
@@ -122,11 +142,16 @@ Filenames/paths are controlled via `config/defaults.json` (`defaults.persistence
 
 ## Repository Layout
 
-- `scripts/Invoke-CupHandleDetection.ps1` — runnable CLI entrypoint
-- `config/defaults.json` — default pipeline configuration
-- `docs/USAGE.md` — detailed usage, parameters, config examples, output schemas
-- `.github/workflows/ci.yml` — CI (Pester) on push/PR
-- `tests/` — Pester tests (run by CI)
+- `src/CupHandleDetector/` — PowerShell module implementation
+- `scripts/` — launch and operational entrypoints
+- `ui/workbench/` — React/Vite workbench UI and local Express API
+- `config/` — default pipeline configuration
+- `data/` — small sample OHLCV inputs
+- `tests/` — Pester tests
+- `docs/` — usage, architecture, roadmap, research notes, and generated reports
+- `prototypes/` — historical Python/React prototypes kept out of the runtime path
+
+The roadmap now lives at **[`docs/roadmap/cup-handle-roadmap.md`](docs/roadmap/cup-handle-roadmap.md)**. Research notes live under **[`docs/research/`](docs/research/)**.
 
 ---
 

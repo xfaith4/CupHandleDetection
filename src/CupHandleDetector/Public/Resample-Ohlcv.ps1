@@ -340,5 +340,3 @@ function Resample-Ohlcv {
     $final
   }
 }
-
-Export-ModuleMember -Function Resample-Ohlcv

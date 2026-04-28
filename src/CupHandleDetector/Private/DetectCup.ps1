@@ -1,5 +1,4 @@
 # src/CupHandleDetector/Private/DetectCup.ps1
-```powershell
 # src/CupHandleDetector/Private/DetectCup.ps1
 # Cup candidate detection:
 # - Depth constraints (peak-to-trough drawdown)
@@ -281,7 +280,7 @@ function Detect-CupCandidates {
             if ($curvatureScore -lt $minCurvature) { continue }
 
             # Candidate score: prefer moderate depth, good symmetry, good curvature, strong rim recovery
-            $symScore = 1.0 - _Clamp01Cup $asym
+            $symScore = 1.0 - (_Clamp01Cup $asym)
             $recoverScore = _Clamp01Cup (($rightPeak / $leftPeak - $minRimRecover) / [Math]::Max(1e-9, 1.0 - $minRimRecover))
             $depthScore = 1.0 - [Math]::Abs($depthPct - 0.28) / 0.28
             $depthScore = _Clamp01Cup $depthScore

@@ -222,7 +222,7 @@ function Compute-Indicators {
 
     $vz = $null
     if ($volZEnabled) {
-        $vz = Get-VolumeZScore -Volume $Volume -Window $volLookback -Clip $volZClip
+        $vz = Get-VolumeZScoreClipped -Volume $Volume -Window $volLookback -Clip $volZClip
     } else {
         $vz = [pscustomobject]@{
             Z        = New-Object object[] $n

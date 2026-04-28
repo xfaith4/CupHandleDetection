@@ -10,23 +10,22 @@
 
 Set-StrictMode -Version Latest
 
-$repoRoot = Split-Path -Parent $PSScriptRoot
-$privateDir = Join-Path $repoRoot 'src' 'CupHandleDetector' 'Private'
-$publicDir  = Join-Path $repoRoot 'src' 'CupHandleDetector' 'Public'
-
-# Dot-source private indicator implementations (preferred for unit tests)
-$atrPath     = Join-Path $privateDir 'Atr.ps1'
-$volPath     = Join-Path $privateDir 'VolumeFeatures.ps1'
-$regimePath  = Join-Path $privateDir 'Regime.ps1'
-$computePath = Join-Path $publicDir  'Compute-Indicators.ps1'
-
 Describe 'Indicators - unit and integration checks' {
 
     BeforeAll {
-        if (Test-Path $atrPath)    { . $atrPath }
-        if (Test-Path $volPath)    { . $volPath }
-        if (Test-Path $regimePath) { . $regimePath }
-        if (Test-Path $computePath){ . $computePath }
+        $repoRoot = Split-Path -Parent $PSScriptRoot
+        $privateDir = Join-Path $repoRoot 'src/CupHandleDetector/Private'
+        $publicDir  = Join-Path $repoRoot 'src/CupHandleDetector/Public'
+
+        $atrPath     = Join-Path $privateDir 'Atr.ps1'
+        $volPath     = Join-Path $privateDir 'VolumeFeatures.ps1'
+        $regimePath  = Join-Path $privateDir 'Regime.ps1'
+        $computePath = Join-Path $publicDir  'Compute-Indicators.ps1'
+
+        if (Test-Path -LiteralPath $atrPath)     { . $atrPath }
+        if (Test-Path -LiteralPath $volPath)     { . $volPath }
+        if (Test-Path -LiteralPath $regimePath)  { . $regimePath }
+        if (Test-Path -LiteralPath $computePath) { . $computePath }
     }
 
     Context 'Volume z-score clipping' {

@@ -267,5 +267,3 @@ function Emit-CHDAlert {
         }
     }
 }
-
-Export-ModuleMember -Function Emit-CHDAlert

@@ -270,5 +270,3 @@ function Get-WeeksSidewaysAtBottom {
 
     return $out
 }
-
-Export-ModuleMember -Function Get-RollingWidth, Get-WeeksSidewaysAtBottom
